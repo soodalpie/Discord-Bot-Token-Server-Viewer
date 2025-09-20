@@ -123,6 +123,10 @@ def _render_text_html(text: str) -> str:
 
     return out
 
+def _json_for_script(data: typing.Any) -> str:
+    """JSON 문자열이 </script> 등으로 스크립트를 조기 종료하지 않도록 escape"""
+    return json.dumps(data, ensure_ascii=False).replace("</", "<\\/")
+
 def _obf(s: str) -> str:
     return base64.b64encode((SALT + (s or "")).encode("utf-8")).decode("ascii")
 
@@ -476,7 +480,7 @@ async def export_channel_history_to_html(channel: discord.TextChannel) -> Path:
     # 수집 완료 후, rows → 여러 개의 JSON 페이지로 쪼갭니다.
     pages = [rows[i:i+PAGE_SIZE] for i in range(0, len(rows), PAGE_SIZE)]
     data_scripts = "\n".join(
-        f"<script type='application/json' id='page-{i}'>{json.dumps(pg, ensure_ascii=False)}</script>"
+        f"<script type='application/json' id='page-{i}'>{_json_for_script(pg)}</script>"
         for i, pg in enumerate(pages)
     )
     TOTAL = len(rows)
@@ -569,8 +573,10 @@ body {{
     function getRowEl(){{
       return pool.pop() || Object.assign(document.createElement('div'), {{className:'row'}});
     }}
+    const ESC_RE = /[&<>]/g;
+    const ESC_MAP = {{'&':'&amp;','<':'&lt;','>':'&gt;'}};
     function esc(s){{
-      return String(s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+      return String(s||'').replace(ESC_RE, function(ch){{ return ESC_MAP[ch]; }});
     }}
 
     function render(){{
