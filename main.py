@@ -573,8 +573,10 @@ body {{
     function getRowEl(){{
       return pool.pop() || Object.assign(document.createElement('div'), {{className:'row'}});
     }}
+    const ESC_RE = /[&<>]/g;
+    const ESC_MAP = {{'&':'&amp;','<':'&lt;','>':'&gt;'}};
     function esc(s){{
-      return String(s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+      return String(s||'').replace(ESC_RE, function(ch){{ return ESC_MAP[ch]; }});
     }}
 
     function render(){{
